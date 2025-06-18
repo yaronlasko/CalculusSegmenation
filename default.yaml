@@ -1,0 +1,7 @@
+MODEL:
+  WEIGHTS: "segmentyolo.pt"
+
+DATA:
+  INPUT_DIR: "dataset/valid"  #options: valid, test, train, test_samples
+  OUTPUT_DIR: "output"
+  COCO_PATH: "output/_annotations.coco.json"
