@@ -46,5 +46,5 @@ def create_calculus_masks(coco_path, image_name, crop_boxes, output_dir, indices
                 tooth_mask = np.logical_or(tooth_mask, bin_mask)
 
         tooth_mask = (tooth_mask * 255).astype(np.uint8)
-        mask_path = join(output_dir, f"calculus_mask_{tooth_idx:02d}.png")
+        mask_path = join(output_dir, f"calculus_mask_{tooth_idx}.png")
         cv2.imwrite(mask_path, tooth_mask)

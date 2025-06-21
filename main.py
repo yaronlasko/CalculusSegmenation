@@ -7,6 +7,7 @@ from segment_teeth import YoloToothSegmenter
 from pathlib import Path
 import os
 import yaml
+from unet_overlay import plot_unet_predictions
 
 config_path = "default.yaml"
 
@@ -78,8 +79,9 @@ def run_segmentation():
 
 
 def main():
-   run_segmentation()
+   #run_segmentation()
    #plot_one_tooth_test()
+   plot_unet_predictions()
 
 if __name__ == "__main__":
     main()
