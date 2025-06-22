@@ -8,6 +8,11 @@ from pathlib import Path
 import os
 import yaml
 from unet_overlay import plot_unet_predictions
+import json
+import numpy as np
+import cv2
+from matplotlib import pyplot as plt
+from pycocotools import mask as mask_utils
 
 config_path = "default.yaml"
 
@@ -72,6 +77,49 @@ def plot_one_tooth_test():
     plt.show()
 
 
+def plot_whole_image_with_mask():
+    coco_path = "dataset/test/_annotations.coco.json"
+    image_path = "dataset/test/IMG_3695_JPG.rf.0dd04138a7f21f10732f5f80c4aa0257.jpg"
+
+    # Load COCO annotations
+    with open(coco_path) as f:
+        coco = json.load(f)
+
+    image_filename = image_path.split("/")[-1]
+    img_entry = next((img for img in coco['images'] if image_filename in img['file_name']), None)
+    if img_entry is None:
+        print(f"Image {image_filename} not found in COCO file.")
+        return
+
+    img_id = img_entry['id']
+    width, height = img_entry['width'], img_entry['height']
+    anns = [ann for ann in coco['annotations'] if ann['image_id'] == img_id]
+
+    full_mask = np.zeros((height, width), dtype=np.uint8)
+
+    for ann in anns:
+        for seg in ann['segmentation']:
+            if len(seg) < 6:
+                continue
+            rle = mask_utils.frPyObjects([seg], height, width)
+            bin_mask = mask_utils.decode(rle)[:, :, 0]
+            full_mask = np.logical_or(full_mask, bin_mask)
+
+    full_mask = (full_mask * 255).astype(np.uint8)
+
+    # Load image
+    image = cv2.imread(image_path)
+    if image is None:
+        print(f"Could not load image: {image_path}")
+        return
+    image = cv2.resize(image, (width, height))
+    overlay = image.copy()
+    overlay[full_mask > 0] = [0, 255, 0]  # Green overlay
+    blended = cv2.addWeighted(image, 0.7, overlay, 0.3, 0)
+
+    # Save the output image
+    cv2.imwrite("real_test_2.png", blended)
+
 
 def run_segmentation():
     segmenter = YoloToothSegmenter("default.yaml")
@@ -81,7 +129,8 @@ def run_segmentation():
 def main():
    #run_segmentation()
    #plot_one_tooth_test()
-   plot_unet_predictions()
+   #plot_unet_predictions()
+   plot_whole_image_with_mask()
 
 if __name__ == "__main__":
     main()
