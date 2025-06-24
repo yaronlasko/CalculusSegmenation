@@ -11,7 +11,7 @@ import yaml
 
 # ==== CONFIGURATION ====
 CONFIG_PATH = "default.yaml"
-IMAGE_PATH = "dataset/train/41B_JPG.rf.10c8e5f226b69020f216cb54a22364e5.jpg"  # <<-- Set this
+IMAGE_PATH = "dataset/train/IMG_0435_JPG.rf.fcd2a82a5156116079e7873ea778cc4d.jpg"  # <<-- Set this
 IMG_SIZE = (256, 256)
 PADDING = 20
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -35,7 +35,7 @@ def plot_unet_predictions():
     results = yolo_model.predict(source=IMAGE_PATH, save=False, imgsz=640, conf=0.25, device=DEVICE.type)
 
     overlay = original_image.copy()
-    colors = (0, 0, 255)
+    annotations = np.zeros_like(overlay)
 
     for i, r in enumerate(results):
         if r.masks is None:
@@ -63,14 +63,43 @@ def plot_unet_predictions():
 
             # Overlay red prediction mask
             red_mask = np.zeros_like(tooth_crop)
-            red_mask[:, :, 2] = pred_mask  # red channel
-
+            red_mask[:, :, 2] = pred_mask
             blended = cv2.addWeighted(tooth_crop, 1.0, red_mask, 0.5, 0)
             overlay[y1:y2, x1:x2] = blended
 
-    # ==== SHOW OUTPUT ====
-    output_path = Path("predicted_from_train.png")
-    cv2.imwrite(str(output_path), overlay)
+            # === Calculate and Draw Percent ===
+            tooth_mask_area = np.count_nonzero(mask_np[y1:y2, x1:x2])
+            calc_overlap = np.count_nonzero((mask_np[y1:y2, x1:x2] > 0) & (pred_mask > 0))
+            percent_covered = 100 * calc_overlap / (tooth_mask_area + 1e-6)
+
+            cx = (x1 + x2) // 2
+            cy = (y1 + y2) // 2
+            text = f"{percent_covered:.2f}%"
+
+            font = cv2.FONT_HERSHEY_SIMPLEX
+            font_scale = 0.35
+            thickness = 1
+            (text_w, text_h), _ = cv2.getTextSize(text, font, font_scale, thickness)
+            text_x = cx - text_w // 2
+            text_y = cy + text_h // 2
+
+            cv2.putText(
+                annotations,
+                text,
+                (text_x, text_y),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.5,
+                (0, 0, 255),
+                1,
+                cv2.LINE_8  # clean solid rendering, no smoothing
+            )
+
+    # Combine overlay and annotations
+    text_mask = np.any(annotations != 0, axis=-1)
+    overlay[text_mask] = annotations[text_mask]
+    final = cv2.addWeighted(overlay, 1.0, annotations, 1.0, 0)
+
+    # ==== SAVE OUTPUT ====
+    output_path = Path("predicted_from_train_2.png")
+    cv2.imwrite(str(output_path), final)
     print(f"Prediction result saved to: {output_path}")
-
-
