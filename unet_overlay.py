@@ -11,7 +11,7 @@ import yaml
 
 # ==== CONFIGURATION ====
 CONFIG_PATH = "default.yaml"
-IMAGE_PATH = "dataset/train/IMG_0435_JPG.rf.fcd2a82a5156116079e7873ea778cc4d.jpg"  # <<-- Set this
+IMAGE_PATH = "dataset/train/41B_JPG.rf.10c8e5f226b69020f216cb54a22364e5.jpg"  # <<-- Set this
 IMG_SIZE = (256, 256)
 PADDING = 20
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -100,6 +100,6 @@ def plot_unet_predictions():
     final = cv2.addWeighted(overlay, 1.0, annotations, 1.0, 0)
 
     # ==== SAVE OUTPUT ====
-    output_path = Path("predicted_from_train_2.png")
+    output_path = Path("predicton.png")
     cv2.imwrite(str(output_path), final)
     print(f"Prediction result saved to: {output_path}")

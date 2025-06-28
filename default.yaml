@@ -3,6 +3,6 @@ MODEL:
 UNET:
   WEIGHTS: "best_model.pth"
 DATA:
-  INPUT_DIR: "dataset/test"  #options: valid, test, train, test_samples
+  INPUT_DIR: "dataset/train"  #options: valid, test, train, test_samples
   OUTPUT_DIR: "output"
   COCO_PATH: "output/_annotations.coco.json"

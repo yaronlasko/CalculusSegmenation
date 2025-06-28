@@ -76,8 +76,8 @@ def plot_one_tooth_test():
 
 
 def plot_whole_image_with_mask():
-    coco_path = "dataset/test/_annotations.coco.json"
-    image_path = "dataset/test/IMG_3695_JPG.rf.0dd04138a7f21f10732f5f80c4aa0257.jpg"
+    coco_path = "dataset/train/_annotations.coco.json"
+    image_path = "dataset/train/41B_JPG.rf.10c8e5f226b69020f216cb54a22364e5.jpg"
 
     # Load COCO annotations
     with open(coco_path) as f:
@@ -116,4 +116,4 @@ def plot_whole_image_with_mask():
     blended = cv2.addWeighted(image, 0.7, overlay, 0.3, 0)
 
     # Save the output image
-    cv2.imwrite("real_test_2.png", blended)
+    cv2.imwrite("real.png", blended)
