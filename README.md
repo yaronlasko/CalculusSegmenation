@@ -15,12 +15,12 @@ Original annotated dataset in COCO format:
 
 dataset/
 ├── train/
-   ├──...
+│ └── ...
 ├── valid/
-   ├──...
+│ └── ...
 └── test/
-  ├── annotations.coco.json
-  └── IMG*.jpg   (all dataset images in this category)
+├── _annotations.coco.json
+└── IMG*.jpg # All dataset images in this category
 
 
 ### `output/`
@@ -29,14 +29,14 @@ Generated pipeline results:
 
 output/
 ├── train/
-   ├──...
+│ └── ...
 ├── valid/
-   ├──...
+│ └── ...
 └── test/
-  └── IMG_/ (Folder per image, with original image name)
-    ├── data/ (Cropped tooth images)
-    ├── teeth_masks/ (Tooth segmentation masks from YOLO)
-    └── calculus_masks/ (COCO-based masks for each tooth)
+└── IMG_/ # Folder per image (named after original image)
+├── data/ # Cropped tooth images
+├── teeth_masks/ # Tooth segmentation masks from YOLO
+└── calculus_masks/ # COCO-based masks for each tooth
 
 ---
 
@@ -103,8 +103,6 @@ Runs the trained U-Net model on all detected teeth in a test image:
 - Annotates each tooth region with the percentage value.
 - Saves the final visualization as `predicton.png`.
 
-![Prediction](examples/predicted_from_train_2.png)
-
 ---
 
 ### `plotting_exmaples.py`
@@ -120,8 +118,6 @@ Creates a green overlay of the full COCO segmentation:
 - Loads image and COCO annotations.
 - Builds a combined mask and overlays it in green.
 - Saves result as `real.png`.
-
-![Ground truth](examples/real_train_2.png)
 
 
 ## ⚙️ Configuration Details
