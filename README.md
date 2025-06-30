@@ -101,6 +101,8 @@ Runs the trained U-Net model on all detected teeth in a test image:
 - Annotates each tooth region with the percentage value.
 - Saves the final visualization as `predicton.png`.
 
+![Prediction](predicton.png)
+
 ---
 
 ### `plotting_exmaples.py`
@@ -116,6 +118,8 @@ Creates a green overlay of the full COCO segmentation:
 - Loads image and COCO annotations.
 - Builds a combined mask and overlays it in green.
 - Saves result as `real.png`.
+
+![Ground truth](real.png)
 
 
 ## ⚙️ Configuration Details
