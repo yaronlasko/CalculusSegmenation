@@ -9,6 +9,8 @@ This project automates the detection and segmentation of dental calculus from in
 
 ## 📁 Directory Structure
 
+```
+
 <details> <summary>📁 <strong>CalculusSegmentation</strong></summary>
 ### `dataset/`
 
@@ -41,6 +43,8 @@ output/
 
 ---
 </details>
+
+```
 
 ## 🧠 Model Files
 
