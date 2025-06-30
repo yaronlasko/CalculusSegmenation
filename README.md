@@ -11,9 +11,6 @@ This project automates the detection and segmentation of dental calculus from in
 
 ```
 
-<details> <summary>📁 <strong>CalculusSegmentation</strong></summary>
-### `dataset/`
-
 Original annotated dataset in COCO format:
 
 dataset/
@@ -25,8 +22,6 @@ dataset/
 ├── _annotations.coco.json
 └── IMG*.jpg # All dataset images in this category
 
----
-### `output/`
 
 Generated pipeline results:
 
@@ -40,9 +35,6 @@ output/
 ├── data/ # Cropped tooth images
 ├── teeth_masks/ # Tooth segmentation masks from YOLO
 └── calculus_masks/ # COCO-based masks for each tooth
-
----
-</details>
 
 ```
 
