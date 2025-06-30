@@ -9,6 +9,7 @@ This project automates the detection and segmentation of dental calculus from in
 
 ## 📁 Directory Structure
 
+<details> <summary>📁 <strong>Click to view fixed tree</strong></summary>
 ### `dataset/`
 
 Original annotated dataset in COCO format:
@@ -37,6 +38,8 @@ output/
 ├── data/ # Cropped tooth images
 ├── teeth_masks/ # Tooth segmentation masks from YOLO
 └── calculus_masks/ # COCO-based masks for each tooth
+
+</details>
 
 ---
 
