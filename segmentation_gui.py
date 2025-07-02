@@ -28,7 +28,7 @@ class SegmentationApp:
         self.display_percent = tk.BooleanVar(value=True)
 
         # Load models
-        with open(CONFIG_PATH, 'r') as f:
+        with open(resource_path(CONFIG_PATH), 'r') as f:
             config = yaml.safe_load(f)
         self.yolo_model = YOLO(resource_path(config['MODEL']['WEIGHTS']))
         self.unet_model = smp.Unet(encoder_name="resnet50", in_channels=3, classes=1).to(DEVICE)
