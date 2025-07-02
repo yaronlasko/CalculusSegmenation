@@ -139,3 +139,15 @@ DATA:
   COCO_PATH: "output/_annotations.coco.json"
 
 ```
+
+
+### 🖼️ Executable gui link:
+Since the file is too large for git, we provide a link through drive: https://drive.google.com/file/d/1WGZs7tc4Rof4l9p-t7qoQ60K5zuVRoH_/view?usp=sharing
+Alternatively, to compile locally use the following command:
+pyinstaller segmentation_gui.py --onefile --windowed --add-data "segmentyolo.pt;." --add-data "best_model.pth;." --add-data "default.yaml;." --add-data "icon/tooth_icon.ico;icon" --icon=icon/tooth_icon.ico
+In our project, this file is placed in a folder called dist/
+
+### 🏋️ Unet model weights:
+Since the weight file is also too large for git, we provided a link through drive: https://drive.google.com/file/d/1H9YKaYMzEsLSEydyk2XK3GSnE6B1rWUJ/view?usp=sharing
+Alternatively, the provided jupyter notebook provides the training logic which computes the weight file.
+Place the file in the main project folder for it to work correctly.
