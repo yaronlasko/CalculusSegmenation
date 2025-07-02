@@ -48,15 +48,16 @@ output/
 ## 🧾 Code Overview
 
 | File                     | Purpose 
-|--------------------------|-------------------------------------------------------------------------------|
-| `main.py`                | Runs the full pipeline (YOLO + U-Net)                                         |
-| `segment_teeth.py`       | Detects and crops individual teeth using YOLO                                 |
-| `split_calculus_masks.py`| Aligns cropped teeth with COCO calculus masks                                 |
-| `unet_overlay.py`        | Applies U-Net model and overlays predictions                                  |
-| `plotting_examples.py`   | Visualization tools for predictions vs ground truth                           |
-| `tooth_seg.ipynb`        | Jupyter notebook for training and testing unet model, generates model weights |
-| `default.yaml`           | Configuration for model paths and settings                                    |
-| `.gitignore`             | Git ignore file for weights, outputs, etc.                                    |
+|--------------------------|--------------------------------------------------------------------------------|
+| `main.py`                | Runs the full pipeline (YOLO + U-Net)                                          |
+| `segment_teeth.py`       | Detects and crops individual teeth using YOLO                                  |
+| `split_calculus_masks.py`| Aligns cropped teeth with COCO calculus masks                                  |
+| `unet_overlay.py`        | Applies U-Net model and overlays predictions                                   |
+| `segmentation_gui.py`    | Provides user interface for running full UNET pipeline on a chosen local image |
+| `plotting_examples.py`   | Visualization tools for predictions vs ground truth                            |
+| `tooth_seg.ipynb`        | Jupyter notebook for training and testing unet model, generates model weights  |
+| `default.yaml`           | Configuration for model paths and settings                                     |
+| `.gitignore`             | Git ignore file for weights, outputs, etc.                                     |
 
 
 ## 🧩 Function Reference
