@@ -122,6 +122,35 @@ Creates a green overlay of the full COCO segmentation:
 
 ![Ground truth](real.png)
 
+---
+
+### `segmentation_gui.py`
+Main GUI for loading images, performing segmentation, and saving results.
+
+#### `SegmentationApp.__init__()`
+  - Initializes the GUI window with custom colors, header, and buttons.
+  - Loads YOLO and U-Net models based on paths from `default.yaml`.
+  - Adds a checkbox to toggle calculus coverage percentages on/off.
+
+#### `upload_image()`
+  - Lets the user upload a `.jpg`, `.png`, or `.jpeg` image.
+  - Runs the image through the segmentation pipeline.
+  - Displays the resulting overlay with calculus regions and percentages (if enabled).
+  - Enables the “Save Result” button.
+
+#### `run_segmentation(original_image)`
+  - Runs YOLO to detect teeth in the uploaded image.
+  - Crops and resizes each tooth to 256×256 for U-Net.
+  - Applies U-Net to predict calculus presence.
+  - Overlays predictions in red on the original image.
+  - Optionally overlays the percentage of calculus coverage for each tooth.
+
+#### `save_image()`
+  - Saves the segmentation result as a `.png` file via a save dialog.
+
+
+---
+
 
 ## ⚙️ Configuration Details
 
