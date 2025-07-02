@@ -17,7 +17,6 @@ best_model.pth
 .Python
 build/
 develop-eggs/
-dist/
 downloads/
 eggs/
 .eggs/
