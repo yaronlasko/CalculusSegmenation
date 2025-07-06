@@ -13,27 +13,44 @@ class AnnotationTool {
         this.zoomLevel = 1;
         this.canvasWrapper = null;
         
+        // Pan state
+        this.isPanning = false;
+        this.panStartX = 0;
+        this.panStartY = 0;
+        this.panOffsetX = 0;
+        this.panOffsetY = 0;
+        
+        // Mode state
+        this.mode = 'paint'; // 'paint' or 'move'
+        
         this.setupEventListeners();
         this.createBrushIndicator();
         this.setupZoomControls();
+        this.setupModeControls();
     }
     
     setupEventListeners() {
         // Mouse events
-        this.annotationCanvas.addEventListener('mousedown', this.startDrawing.bind(this));
-        this.annotationCanvas.addEventListener('mousemove', this.draw.bind(this));
-        this.annotationCanvas.addEventListener('mouseup', this.stopDrawing.bind(this));
-        this.annotationCanvas.addEventListener('mouseout', this.stopDrawing.bind(this));
+        this.annotationCanvas.addEventListener('mousedown', this.handleMouseDown.bind(this));
+        this.annotationCanvas.addEventListener('mousemove', this.handleMouseMove.bind(this));
+        this.annotationCanvas.addEventListener('mouseup', this.handleMouseUp.bind(this));
+        this.annotationCanvas.addEventListener('mouseout', this.handleMouseUp.bind(this));
         
         // Touch events for mobile
         this.annotationCanvas.addEventListener('touchstart', this.handleTouch.bind(this));
         this.annotationCanvas.addEventListener('touchmove', this.handleTouch.bind(this));
         this.annotationCanvas.addEventListener('touchend', this.stopDrawing.bind(this));
         
-        // Brush cursor
+        // Brush cursor (only show in paint mode)
         this.annotationCanvas.addEventListener('mousemove', this.updateBrushCursor.bind(this));
         this.annotationCanvas.addEventListener('mouseenter', this.showBrushCursor.bind(this));
         this.annotationCanvas.addEventListener('mouseleave', this.hideBrushCursor.bind(this));
+        
+        // Wheel zoom
+        this.annotationCanvas.addEventListener('wheel', this.handleWheel.bind(this));
+        
+        // Context menu prevention
+        this.annotationCanvas.addEventListener('contextmenu', (e) => e.preventDefault());
     }
     
     createBrushIndicator() {
@@ -44,11 +61,12 @@ class AnnotationTool {
     }
     
     updateBrushCursor(e) {
-        if (this.brushIndicator) {
+        if (this.brushIndicator && this.mode === 'paint') {
             const rect = this.annotationCanvas.getBoundingClientRect();
             const x = e.clientX;
             const y = e.clientY;
             
+            // Brush size should scale with zoom level for visual accuracy
             const scaledSize = this.brushSize * 2 * this.zoomLevel;
             this.brushIndicator.style.left = x + 'px';
             this.brushIndicator.style.top = y + 'px';
@@ -59,17 +77,17 @@ class AnnotationTool {
     }
     
     showBrushCursor() {
-        if (this.brushIndicator) {
+        if (this.brushIndicator && this.mode === 'paint') {
             this.brushIndicator.style.display = 'block';
         }
-        this.annotationCanvas.classList.add('brush-cursor');
+        this.updateCursor();
     }
     
     hideBrushCursor() {
         if (this.brushIndicator) {
             this.brushIndicator.style.display = 'none';
         }
-        this.annotationCanvas.classList.remove('brush-cursor');
+        this.updateCursor();
     }
     
     handleTouch(e) {
@@ -82,25 +100,12 @@ class AnnotationTool {
         this.annotationCanvas.dispatchEvent(mouseEvent);
     }
     
-    startDrawing(e) {
-        this.isDrawing = true;
-        this.lastX = undefined;
-        this.lastY = undefined;
-        this.draw(e);
-    }
-    
     draw(e) {
         if (!this.isDrawing) return;
         
-        const rect = this.annotationCanvas.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
-        
-        // Scale coordinates to match canvas resolution and account for zoom
-        const scaleX = this.annotationCanvas.width / rect.width;
-        const scaleY = this.annotationCanvas.height / rect.height;
-        const scaledX = (x * scaleX) / this.zoomLevel;
-        const scaledY = (y * scaleY) / this.zoomLevel;
+        const coords = this.getCanvasCoordinates(e);
+        const scaledX = coords.x;
+        const scaledY = coords.y;
         
         this.annotationCtx.globalCompositeOperation = 'source-over';
         // Save annotation with full alpha (1.0) but display with transparency
@@ -173,11 +178,19 @@ class AnnotationTool {
                 this.annotationCanvas.style.width = displayWidth + 'px';
                 this.annotationCanvas.style.height = displayHeight + 'px';
                 
+                // Set canvas wrapper dimensions to match the canvases
+                const canvasWrapper = this.getCanvasWrapper();
+                if (canvasWrapper) {
+                    canvasWrapper.style.width = displayWidth + 'px';
+                    canvasWrapper.style.height = displayHeight + 'px';
+                }
+                
                 // Draw image on image canvas
                 this.imageCtx.drawImage(img, 0, 0, displayWidth, displayHeight);
                 
-                // Clear annotation canvas
+                // Clear annotation canvas and set display opacity
                 this.clearCanvas();
+                this.annotationCanvas.style.opacity = '0.6';
                 
                 resolve();
             };
@@ -212,43 +225,18 @@ class AnnotationTool {
             
             // Zoom reset
             zoomReset.addEventListener('click', () => {
+                this.panOffsetX = 0;
+                this.panOffsetY = 0;
                 this.setZoom(1);
                 zoomSlider.value = 100;
                 zoomValue.textContent = '100%';
-            });
-            
-            // Mouse wheel zoom
-            this.annotationCanvas.addEventListener('wheel', (e) => {
-                if (e.ctrlKey) {
-                    e.preventDefault();
-                    const delta = e.deltaY > 0 ? -0.1 : 0.1;
-                    const newZoom = Math.max(0.5, Math.min(3, this.zoomLevel + delta));
-                    this.setZoom(newZoom);
-                    zoomSlider.value = newZoom * 100;
-                    zoomValue.textContent = Math.round(newZoom * 100) + '%';
-                }
             });
         }
     }
     
     setZoom(zoom) {
         this.zoomLevel = zoom;
-        
-        // Find canvas wrapper - try multiple approaches
-        let canvasWrapper = this.annotationCanvas.parentElement;
-        if (!canvasWrapper || !canvasWrapper.classList.contains('canvas-wrapper')) {
-            canvasWrapper = document.getElementById('canvasWrapper');
-        }
-        if (!canvasWrapper) {
-            canvasWrapper = document.querySelector('.canvas-wrapper');
-        }
-        
-        if (canvasWrapper) {
-            canvasWrapper.style.transform = `scale(${zoom})`;
-            canvasWrapper.style.transformOrigin = 'top left';
-        } else {
-            console.warn('Canvas wrapper not found for zoom');
-        }
+        this.updateCanvasTransform();
         
         // Update brush indicator size
         this.updateBrushIndicatorSize();
@@ -260,6 +248,185 @@ class AnnotationTool {
             this.brushIndicator.style.width = scaledSize + 'px';
             this.brushIndicator.style.height = scaledSize + 'px';
         }
+    }
+    
+    handleMouseDown(e) {
+        e.preventDefault();
+        
+        if (this.mode === 'paint' && e.button === 0) { // Left click in paint mode
+            this.isDrawing = true;
+            this.lastX = undefined;
+            this.lastY = undefined;
+            this.draw(e);
+        } else if (this.mode === 'move' && e.button === 0) { // Left click in move mode
+            this.isPanning = true;
+            this.panStartX = e.clientX;
+            this.panStartY = e.clientY;
+            this.annotationCanvas.style.cursor = 'grabbing';
+        }
+    }
+    
+    handleMouseMove(e) {
+        if (this.isDrawing && this.mode === 'paint') {
+            this.draw(e);
+        } else if (this.isPanning && this.mode === 'move') {
+            this.handlePan(e);
+        }
+    }
+    
+    handleMouseUp(e) {
+        if (this.isDrawing) {
+            this.stopDrawing();
+        }
+        if (this.isPanning) {
+            this.stopPanning();
+        }
+    }
+    
+    handlePan(e) {
+        const deltaX = e.clientX - this.panStartX;
+        const deltaY = e.clientY - this.panStartY;
+        
+        this.panOffsetX += deltaX;
+        this.panOffsetY += deltaY;
+        
+        this.updateCanvasTransform();
+        
+        this.panStartX = e.clientX;
+        this.panStartY = e.clientY;
+    }
+    
+    stopPanning() {
+        this.isPanning = false;
+        this.annotationCanvas.style.cursor = '';
+    }
+    
+    handleWheel(e) {
+        e.preventDefault();
+        
+        const rect = this.annotationCanvas.getBoundingClientRect();
+        const mouseX = e.clientX - rect.left;
+        const mouseY = e.clientY - rect.top;
+        
+        const delta = e.deltaY > 0 ? -0.1 : 0.1;
+        const newZoom = Math.max(0.25, Math.min(3, this.zoomLevel + delta));
+        
+        // Calculate zoom center offset
+        const zoomFactor = newZoom / this.zoomLevel;
+        this.panOffsetX = mouseX - (mouseX - this.panOffsetX) * zoomFactor;
+        this.panOffsetY = mouseY - (mouseY - this.panOffsetY) * zoomFactor;
+        
+        this.setZoom(newZoom);
+        
+        // Update zoom controls
+        const zoomSlider = document.getElementById('zoomSlider');
+        const zoomValue = document.getElementById('zoomValue');
+        if (zoomSlider && zoomValue) {
+            zoomSlider.value = newZoom * 100;
+            zoomValue.textContent = Math.round(newZoom * 100) + '%';
+        }
+    }
+    
+    updateCanvasTransform() {
+        const canvasWrapper = this.getCanvasWrapper();
+        if (canvasWrapper) {
+            canvasWrapper.style.transform = `scale(${this.zoomLevel}) translate(${this.panOffsetX / this.zoomLevel}px, ${this.panOffsetY / this.zoomLevel}px)`;
+        }
+    }
+    
+    getCanvasWrapper() {
+        if (!this.canvasWrapper) {
+            this.canvasWrapper = this.annotationCanvas.parentElement;
+            if (!this.canvasWrapper || !this.canvasWrapper.classList.contains('canvas-wrapper')) {
+                this.canvasWrapper = document.getElementById('canvasWrapper');
+            }
+            if (!this.canvasWrapper) {
+                this.canvasWrapper = document.querySelector('.canvas-wrapper');
+            }
+        }
+        return this.canvasWrapper;
+    }
+    
+    setupModeControls() {
+        const paintModeBtn = document.getElementById('paintMode');
+        const moveModeBtn = document.getElementById('moveMode');
+        
+        if (paintModeBtn && moveModeBtn) {
+            paintModeBtn.addEventListener('click', () => {
+                this.setMode('paint');
+            });
+            
+            moveModeBtn.addEventListener('click', () => {
+                this.setMode('move');
+            });
+        }
+    }
+    
+    setMode(mode) {
+        this.mode = mode;
+        
+        // Update button states
+        const paintModeBtn = document.getElementById('paintMode');
+        const moveModeBtn = document.getElementById('moveMode');
+        
+        if (paintModeBtn && moveModeBtn) {
+            if (mode === 'paint') {
+                paintModeBtn.classList.add('active');
+                paintModeBtn.classList.remove('btn-secondary');
+                paintModeBtn.classList.add('btn-primary');
+                moveModeBtn.classList.remove('active');
+                moveModeBtn.classList.add('btn-secondary');
+                moveModeBtn.classList.remove('btn-primary');
+            } else {
+                moveModeBtn.classList.add('active');
+                moveModeBtn.classList.remove('btn-secondary');
+                moveModeBtn.classList.add('btn-primary');
+                paintModeBtn.classList.remove('active');
+                paintModeBtn.classList.add('btn-secondary');
+                paintModeBtn.classList.remove('btn-primary');
+            }
+        }
+        
+        this.updateCursor();
+    }
+    
+    updateCursor() {
+        if (this.mode === 'paint') {
+            this.annotationCanvas.style.cursor = 'none';
+            if (this.brushIndicator) {
+                this.brushIndicator.style.display = 'block';
+            }
+        } else {
+            this.annotationCanvas.style.cursor = 'grab';
+            if (this.brushIndicator) {
+                this.brushIndicator.style.display = 'none';
+            }
+        }
+    }
+    
+    getCanvasCoordinates(e) {
+        const rect = this.annotationCanvas.getBoundingClientRect();
+        const canvasWrapper = this.getCanvasWrapper();
+        
+        // Get mouse position relative to the canvas container
+        const containerRect = canvasWrapper.parentElement.getBoundingClientRect();
+        const mouseX = e.clientX - containerRect.left;
+        const mouseY = e.clientY - containerRect.top;
+        
+        // Account for canvas wrapper transform (zoom and pan)
+        const wrapperRect = canvasWrapper.getBoundingClientRect();
+        const wrapperCenterX = wrapperRect.left + wrapperRect.width / 2 - containerRect.left;
+        const wrapperCenterY = wrapperRect.top + wrapperRect.height / 2 - containerRect.top;
+        
+        // Calculate position relative to canvas center, accounting for zoom and pan
+        const relativeX = (mouseX - wrapperCenterX) / this.zoomLevel;
+        const relativeY = (mouseY - wrapperCenterY) / this.zoomLevel;
+        
+        // Convert to canvas coordinates
+        const canvasX = relativeX + this.annotationCanvas.width / 2;
+        const canvasY = relativeY + this.annotationCanvas.height / 2;
+        
+        return { x: canvasX, y: canvasY };
     }
 }
 
@@ -320,17 +487,20 @@ class AnnotationModal {
         
         this.modal.style.display = 'block';
         
-        // Initialize annotation tool
-        this.annotationTool = new AnnotationTool(this.imageCanvas, this.annotationCanvas);
-        this.annotationTool.setBrushSize(parseInt(this.brushSizeSlider.value));
-        
-        // Load image
-        this.annotationTool.loadImage(imageData.path)
-            .catch(error => {
-                console.error('Error loading image:', error);
-                alert('Error loading image');
-                this.close();
-            });
+        // Wait for modal to be visible before initializing
+        setTimeout(() => {
+            // Initialize annotation tool
+            this.annotationTool = new AnnotationTool(this.imageCanvas, this.annotationCanvas);
+            this.annotationTool.setBrushSize(parseInt(this.brushSizeSlider.value));
+            
+            // Load image
+            this.annotationTool.loadImage(imageData.path)
+                .catch(error => {
+                    console.error('Error loading image:', error);
+                    alert('Error loading image: ' + error.message);
+                    this.close();
+                });
+        }, 100);
     }
     
     close() {

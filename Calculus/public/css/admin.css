@@ -208,25 +208,33 @@
 /* Admin image display with zoom */
 .image-display {
     position: relative;
-    overflow: auto;
+    overflow: hidden;
     max-height: 70vh;
     border: 1px solid #ddd;
     border-radius: 8px;
-}
-
-.admin-image-wrapper {
+    background: #f8f9fa;
     display: flex;
     justify-content: center;
     align-items: center;
-    min-height: 300px;
+}
+
+.admin-image-wrapper {
+    position: relative;
+    display: inline-block;
     transform-origin: center center;
     transition: transform 0.1s ease-out;
+    cursor: grab;
+}
+
+.admin-image-wrapper:active {
+    cursor: grabbing;
 }
 
 .admin-image-wrapper img {
-    max-width: 100%;
-    max-height: 100%;
+    max-width: none;
+    max-height: none;
     border-radius: 4px;
+    display: block;
 }
 
 .empty-state {
@@ -234,6 +242,60 @@
     color: #666;
     padding: 2rem;
     font-style: italic;
+}
+
+/* Admin zoom controls */
+.image-display .zoom-controls {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: rgba(255, 255, 255, 0.9);
+    padding: 10px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    z-index: 1000; /* High z-index to ensure it's on top */
+}
+
+.image-display .zoom-slider-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+}
+
+.image-display .zoom-slider {
+    writing-mode: bt-lr; /* IE */
+    writing-mode: vertical-lr; /* Standard */
+    width: 4px;
+    height: 100px;
+    background: #ddd;
+    outline: none;
+    border-radius: 2px;
+}
+
+.image-display .zoom-value {
+    font-size: 12px;
+    font-weight: bold;
+    color: #667eea;
+    text-align: center;
+}
+
+.image-display .zoom-reset {
+    background: #667eea;
+    color: white;
+    border: none;
+    padding: 5px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.image-display .zoom-reset:hover {
+    background: #5a6fd8;
 }
 
 /* Responsive design */

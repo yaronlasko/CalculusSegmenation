@@ -33,6 +33,12 @@
                         
                         <div class="annotation-tools">
                             <div class="tool-group">
+                                <label>Mode:</label>
+                                <button id="paintMode" class="btn btn-primary active">Paint</button>
+                                <button id="moveMode" class="btn btn-secondary">Move</button>
+                            </div>
+                            
+                            <div class="tool-group">
                                 <label for="brushSize">Brush Size:</label>
                                 <input type="range" id="brushSize" min="1" max="50" value="10">
                                 <span id="brushSizeValue">10</span>
@@ -48,7 +54,7 @@
                             <div class="zoom-controls">
                                 <div class="zoom-slider-container">
                                     <div class="zoom-value" id="zoomValue">100%</div>
-                                    <input type="range" id="zoomSlider" class="zoom-slider" min="50" max="300" value="100" orient="vertical">
+                                    <input type="range" id="zoomSlider" class="zoom-slider" min="25" max="300" value="100" orient="vertical">
                                     <button id="zoomReset" class="zoom-reset">Reset</button>
                                 </div>
                             </div>

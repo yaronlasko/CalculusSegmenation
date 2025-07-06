@@ -131,6 +131,17 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 // Set the canvas result as the modal image
                 modalImage.src = canvas.toDataURL();
+                
+                // Reset zoom and pan when new image loads
+                adminZoomLevel = 1;
+                adminPanOffsetX = 0;
+                adminPanOffsetY = 0;
+                adminZoomSlider.value = 100;
+                adminZoomValue.textContent = '100%';
+                updateAdminTransform();
+                
+                // Auto-fit image to modal if it's too large
+                fitImageToModal();
             };
             annotationImg.onerror = function() {
                 console.error('Error loading annotation image');
@@ -177,6 +188,12 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Admin zoom functionality
     let adminZoomLevel = 1;
+    let adminPanOffsetX = 0;
+    let adminPanOffsetY = 0;
+    let adminIsPanning = false;
+    let adminPanStartX = 0;
+    let adminPanStartY = 0;
+    
     const adminImageWrapper = document.getElementById('adminImageWrapper');
     const adminZoomSlider = document.getElementById('adminZoomSlider');
     const adminZoomValue = document.getElementById('adminZoomValue');
@@ -191,29 +208,128 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Zoom reset
             adminZoomReset.addEventListener('click', () => {
+                adminPanOffsetX = 0;
+                adminPanOffsetY = 0;
                 setAdminZoom(100);
                 adminZoomSlider.value = 100;
             });
             
-            // Mouse wheel zoom
+            // Mouse wheel zoom with center on cursor
             adminImageWrapper.addEventListener('wheel', (e) => {
                 e.preventDefault();
+                
+                const rect = adminImageWrapper.getBoundingClientRect();
+                const containerRect = adminImageWrapper.parentElement.getBoundingClientRect();
+                
+                // Get mouse position relative to the image wrapper
+                const mouseX = e.clientX - containerRect.left;
+                const mouseY = e.clientY - containerRect.top;
+                
                 const delta = e.deltaY > 0 ? -10 : 10;
-                const newZoom = Math.max(50, Math.min(300, adminZoomLevel * 100 + delta));
-                setAdminZoom(newZoom);
-                adminZoomSlider.value = newZoom;
+                const oldZoom = adminZoomLevel;
+                const newZoom = Math.max(25, Math.min(300, adminZoomLevel * 100 + delta)) / 100;
+                
+                if (newZoom !== oldZoom) {
+                    // Calculate zoom center offset
+                    const zoomFactor = newZoom / oldZoom;
+                    
+                    // Adjust pan offset to keep zoom centered on mouse
+                    adminPanOffsetX = mouseX - (mouseX - adminPanOffsetX) * zoomFactor;
+                    adminPanOffsetY = mouseY - (mouseY - adminPanOffsetY) * zoomFactor;
+                    
+                    adminZoomLevel = newZoom;
+                    updateAdminTransform();
+                    
+                    if (adminZoomSlider) {
+                        adminZoomSlider.value = Math.round(newZoom * 100);
+                    }
+                    
+                    if (adminZoomValue) {
+                        adminZoomValue.textContent = `${Math.round(newZoom * 100)}%`;
+                    }
+                }
             });
+            
+            // Pan functionality
+            adminImageWrapper.addEventListener('mousedown', (e) => {
+                if (e.button === 0) { // Left click
+                    adminIsPanning = true;
+                    adminPanStartX = e.clientX;
+                    adminPanStartY = e.clientY;
+                    adminImageWrapper.style.cursor = 'grabbing';
+                    e.preventDefault();
+                }
+            });
+            
+            document.addEventListener('mousemove', (e) => {
+                if (adminIsPanning) {
+                    const deltaX = e.clientX - adminPanStartX;
+                    const deltaY = e.clientY - adminPanStartY;
+                    
+                    adminPanOffsetX += deltaX;
+                    adminPanOffsetY += deltaY;
+                    
+                    updateAdminTransform();
+                    
+                    adminPanStartX = e.clientX;
+                    adminPanStartY = e.clientY;
+                }
+            });
+            
+            document.addEventListener('mouseup', () => {
+                if (adminIsPanning) {
+                    adminIsPanning = false;
+                    adminImageWrapper.style.cursor = 'grab';
+                }
+            });
+            
+            // Set initial cursor
+            adminImageWrapper.style.cursor = 'grab';
         }
     }
     
     function setAdminZoom(zoomPercent) {
         adminZoomLevel = zoomPercent / 100;
-        if (adminImageWrapper) {
-            adminImageWrapper.style.transform = `scale(${adminZoomLevel})`;
-        }
+        updateAdminTransform();
         
         if (adminZoomValue) {
-            adminZoomValue.textContent = `${zoomPercent}%`;
+            adminZoomValue.textContent = `${Math.round(zoomPercent)}%`;
+        }
+    }
+    
+    function updateAdminTransform() {
+        if (adminImageWrapper) {
+            adminImageWrapper.style.transform = `scale(${adminZoomLevel}) translate(${adminPanOffsetX / adminZoomLevel}px, ${adminPanOffsetY / adminZoomLevel}px)`;
+        }
+    }
+    
+    // Function to auto-fit large images to the modal window
+    function fitImageToModal() {
+        if (modalImage && adminImageWrapper) {
+            modalImage.onload = function() {
+                const modalContent = document.querySelector('.modal-content');
+                const modalRect = modalContent.getBoundingClientRect();
+                
+                // Get available space (subtract padding and other elements)
+                const availableWidth = modalRect.width - 40; // 20px padding each side
+                const availableHeight = modalRect.height - 200; // Space for header, controls, etc.
+                
+                const imageWidth = modalImage.naturalWidth;
+                const imageHeight = modalImage.naturalHeight;
+                
+                // Calculate scale to fit
+                const scaleX = availableWidth / imageWidth;
+                const scaleY = availableHeight / imageHeight;
+                const scale = Math.min(scaleX, scaleY, 1); // Don't scale up, only down
+                
+                if (scale < 1) {
+                    const zoomPercent = Math.round(scale * 100);
+                    adminZoomLevel = scale;
+                    adminZoomSlider.value = zoomPercent;
+                    adminZoomValue.textContent = `${zoomPercent}%`;
+                    updateAdminTransform();
+                }
+            };
         }
     }
     
