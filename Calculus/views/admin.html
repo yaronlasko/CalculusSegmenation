@@ -13,7 +13,7 @@
             <h1>🔧 Admin View</h1>
             <div class="admin-controls">
                 <button id="refreshBtn" class="btn btn-secondary">Refresh</button>
-                <a href="/" class="btn btn-secondary">Back to Home</a>
+                <a href="/" class="btn btn-secondary">Home</a>
             </div>
         </header>
         
@@ -38,9 +38,9 @@
                 </div>
                 
                 <div class="annotations-section">
-                    <h2>Test Section Annotations</h2>
-                    <div id="testAnnotations" class="annotations-grid">
-                        <!-- Test annotations will be loaded here -->
+                    <h2>Test Images & Annotations</h2>
+                    <div id="testImagesList" class="images-list">
+                        <!-- Test images will be loaded here -->
                     </div>
                     
                     <h2>Annotate Section Annotations</h2>
@@ -85,6 +85,21 @@
                     <div class="admin-image-wrapper" id="adminImageWrapper">
                         <img id="modalImage" src="" alt="Annotation">
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Image Annotations Modal -->
+    <div id="imageAnnotationsModal" class="image-modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>All Annotations for Image: <span id="modalImageName"></span></h3>
+                <span class="close" id="closeImageAnnotationsModal">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="image-annotations-grid" id="imageAnnotationsGrid">
+                    <!-- Image annotations will be loaded here -->
                 </div>
             </div>
         </div>

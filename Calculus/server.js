@@ -346,6 +346,11 @@ app.get('/api/admin/annotations', requireAdmin, (req, res) => {
     res.json(annotations);
 });
 
+// Admin endpoint to get all test images
+app.get('/api/admin/test-images', requireAdmin, (req, res) => {
+    res.json(testImages);
+});
+
 // Error handling middleware
 app.use((error, req, res, next) => {
     if (error instanceof multer.MulterError) {

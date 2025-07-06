@@ -1,7 +1,7 @@
 // Admin page functionality
 document.addEventListener('DOMContentLoaded', function() {
     const refreshBtn = document.getElementById('refreshBtn');
-    const testAnnotationsDiv = document.getElementById('testAnnotations');
+    const testImagesList = document.getElementById('testImagesList');
     const annotateAnnotationsDiv = document.getElementById('annotateAnnotations');
     const testCountSpan = document.getElementById('testCount');
     const annotateCountSpan = document.getElementById('annotateCount');
@@ -15,6 +15,14 @@ document.addEventListener('DOMContentLoaded', function() {
     const modalSource = document.getElementById('modalSource');
     const modalTimestamp = document.getElementById('modalTimestamp');
     
+    // New modal for image annotations
+    const imageAnnotationsModal = document.getElementById('imageAnnotationsModal');
+    const closeImageAnnotationsModal = document.getElementById('closeImageAnnotationsModal');
+    const modalImageName = document.getElementById('modalImageName');
+    const imageAnnotationsGrid = document.getElementById('imageAnnotationsGrid');
+    
+    let allAnnotations = { test: [], annotate: [] };
+    
     // Load annotations on page load
     loadAnnotations();
     
@@ -26,9 +34,16 @@ document.addEventListener('DOMContentLoaded', function() {
         imageModal.style.display = 'none';
     });
     
+    closeImageAnnotationsModal.addEventListener('click', () => {
+        imageAnnotationsModal.style.display = 'none';
+    });
+    
     window.addEventListener('click', (e) => {
         if (e.target === imageModal) {
             imageModal.style.display = 'none';
+        }
+        if (e.target === imageAnnotationsModal) {
+            imageAnnotationsModal.style.display = 'none';
         }
     });
     
@@ -36,6 +51,7 @@ document.addEventListener('DOMContentLoaded', function() {
         fetch('/api/admin/annotations')
             .then(response => response.json())
             .then(data => {
+                allAnnotations = data;
                 displayAnnotations(data);
             })
             .catch(error => {
@@ -52,18 +68,10 @@ document.addEventListener('DOMContentLoaded', function() {
         annotateCountSpan.textContent = annotateAnnotations.length;
         totalCountSpan.textContent = testAnnotations.length + annotateAnnotations.length;
         
-        // Display test annotations
-        if (testAnnotations.length === 0) {
-            testAnnotationsDiv.innerHTML = '<div class="empty-state">No test annotations found</div>';
-        } else {
-            testAnnotationsDiv.innerHTML = '';
-            testAnnotations.forEach(annotation => {
-                const annotationElement = createAnnotationElement(annotation);
-                testAnnotationsDiv.appendChild(annotationElement);
-            });
-        }
+        // Load and display test images with annotation counts
+        loadTestImages();
         
-        // Display annotate annotations
+        // Display annotate annotations (keep existing functionality)
         if (annotateAnnotations.length === 0) {
             annotateAnnotationsDiv.innerHTML = '<div class="empty-state">No annotate annotations found</div>';
         } else {
@@ -73,6 +81,92 @@ document.addEventListener('DOMContentLoaded', function() {
                 annotateAnnotationsDiv.appendChild(annotationElement);
             });
         }
+    }
+    
+    function loadTestImages() {
+        fetch('/api/admin/test-images')
+            .then(response => response.json())
+            .then(images => {
+                displayTestImages(images);
+            })
+            .catch(error => {
+                console.error('Error loading test images:', error);
+                testImagesList.innerHTML = '<div class="empty-state">Error loading test images</div>';
+            });
+    }
+    
+    function displayTestImages(images) {
+        if (images.length === 0) {
+            testImagesList.innerHTML = '<div class="empty-state">No test images found</div>';
+            return;
+        }
+        
+        testImagesList.innerHTML = '';
+        
+        images.forEach(image => {
+            // Count annotations for this image
+            const testAnnotations = allAnnotations.test || [];
+            const annotationsForImage = testAnnotations.filter(annotation => 
+                annotation.originalImage === image.name || 
+                annotation.imageId === image.id
+            );
+            
+            const imageElement = document.createElement('div');
+            imageElement.className = 'image-item';
+            imageElement.innerHTML = `
+                <img src="${image.path}" alt="${image.name}" class="image-preview">
+                <div class="image-info">
+                    <h4>${image.name}</h4>
+                    <div class="image-meta">ID: ${image.id}</div>
+                    <div class="image-meta">Annotations: ${annotationsForImage.length}</div>
+                </div>
+            `;
+            
+            imageElement.addEventListener('click', () => {
+                showImageAnnotations(image, annotationsForImage);
+            });
+            
+            testImagesList.appendChild(imageElement);
+        });
+    }
+    
+    function showImageAnnotations(image, annotations) {
+        modalImageName.textContent = image.name;
+        
+        if (annotations.length === 0) {
+            imageAnnotationsGrid.innerHTML = '<div class="empty-state">No annotations found for this image</div>';
+        } else {
+            imageAnnotationsGrid.innerHTML = '';
+            
+            annotations.forEach(annotation => {
+                const annotationElement = document.createElement('div');
+                annotationElement.className = 'annotation-item';
+                
+                const timestamp = new Date(annotation.timestamp).toLocaleString();
+                
+                annotationElement.innerHTML = `
+                    <img src="/uploads/annotations/${annotation.filename}" alt="Annotation" class="annotation-preview">
+                    <div class="annotation-info">
+                        <h4>User ${annotation.userId}</h4>
+                        <div class="annotation-meta">Created: ${timestamp}</div>
+                        <div class="annotation-meta">File: ${annotation.filename}</div>
+                        <span class="user-badge">User: ${annotation.userId}</span>
+                        <span class="source-badge ${annotation.source}">${annotation.source}</span>
+                    </div>
+                `;
+                
+                annotationElement.addEventListener('click', () => {
+                    // Close the image annotations modal first
+                    imageAnnotationsModal.style.display = 'none';
+                    // Then show the individual annotation modal
+                    showAnnotationModal(annotation);
+                });
+                
+                imageAnnotationsGrid.appendChild(annotationElement);
+            });
+        }
+        
+        imageAnnotationsModal.style.display = 'block';
     }
     
     function createAnnotationElement(annotation) {
