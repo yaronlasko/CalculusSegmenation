@@ -63,28 +63,61 @@ REM Check if model files exist
 echo 🔍 Checking for model files...
 
 if not exist "..\segmentyolo.pt" (
-    echo ⚠️  Warning: segmentyolo.pt not found in parent directory
-    echo    Please ensure the YOLO model file is available
+    echo ❌ ERROR: segmentyolo.pt not found in parent directory
+    echo    Please download and place the YOLO model file in the project root
+    echo    Expected location: ..\segmentyolo.pt
+    echo.
+    set /p dummy=Press Enter to continue anyway...
+) else (
+    echo ✅ segmentyolo.pt found
 )
 
 if not exist "..\best_model.pth" (
-    echo ⚠️  Warning: best_model.pth not found in parent directory
-    echo    Please ensure the U-Net model file is available
+    echo ❌ ERROR: best_model.pth not found in parent directory
+    echo    Please download from: https://drive.google.com/file/d/1H9YKaYMzEsLSEydyk2XK3GSnE6B1rWUJ/view?usp=sharing
+    echo    Expected location: ..\best_model.pth
+    echo.
+    set /p dummy=Press Enter to continue anyway...
+) else (
+    echo ✅ best_model.pth found
 )
 
 if not exist "..\default.yaml" (
-    echo ⚠️  Warning: default.yaml not found in parent directory
+    echo ❌ ERROR: default.yaml not found in parent directory
     echo    Please ensure the configuration file is available
+    echo    Expected location: ..\default.yaml
+    echo.
+    set /p dummy=Press Enter to continue anyway...
+) else (
+    echo ✅ default.yaml found
+)
+
+REM Create .env file if it doesn't exist
+if not exist ".env" (
+    if exist ".env.example" (
+        echo 📝 Creating .env file from template...
+        copy ".env.example" ".env"
+        echo ✅ .env file created
+    )
 )
 
 echo.
 echo 🎉 Setup complete!
 echo.
-echo To start the server:
+echo 📖 For detailed setup instructions, see: SETUP_GUIDE.md
+echo.
+echo 🚀 To start the server:
+echo   .\start-server.bat
+echo   OR
 echo   npm start
 echo.
-echo To start in development mode:
+echo 🔧 To start in development mode:
 echo   npm run dev
 echo.
-echo The AI detection will be available at: http://localhost:3000/detect
+echo 🌐 The application will be available at:
+echo   http://localhost:3000
+echo   http://localhost:3000/detect (AI Detection)
+echo   http://localhost:3000/test (Test Interface)
+echo   http://localhost:3000/annotate (Annotation Tool)
+echo.
 pause
