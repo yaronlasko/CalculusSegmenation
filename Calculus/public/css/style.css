@@ -198,6 +198,43 @@ form {
     background: #f8f9ff;
 }
 
+.upload-area input[type="file"] {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: pointer;
+    z-index: 1;
+}
+
+.file-info {
+    position: relative;
+    z-index: 2;
+    pointer-events: none;
+}
+
+.file-info p {
+    margin: 0.5rem 0;
+}
+
+.file-status {
+    position: relative;
+    z-index: 2;
+    pointer-events: none;
+}
+
+.file-status p {
+    margin: 0.5rem 0;
+}
+
+.file-types {
+    font-size: 0.9rem;
+    color: #666;
+    margin-top: 0.5rem;
+}
+
 .upload-area p {
     margin-bottom: 0.5rem;
     font-size: 1.1rem;
@@ -345,25 +382,31 @@ form {
 .image-comparison {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 1rem;
+    gap: 2rem;
     margin-bottom: 2rem;
 }
 
 .image-container {
     text-align: center;
+    position: relative;
 }
 
 .image-container h5 {
-    margin-bottom: 0.5rem;
+    margin-bottom: 1rem;
     color: #667eea;
-    font-size: 1.1rem;
+    font-size: 1.2rem;
+    font-weight: 600;
 }
 
 .result-image {
-    max-width: 100%;
+    width: 100%;
+    max-width: 600px;
     height: auto;
     border-radius: 8px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    display: block;
+    margin: 0 auto;
+    border: 2px solid #e0e0e0;
 }
 
 .individual-results h5 {

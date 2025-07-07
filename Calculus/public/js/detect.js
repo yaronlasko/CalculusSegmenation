@@ -7,8 +7,12 @@ document.addEventListener('DOMContentLoaded', function() {
     const resultContent = document.getElementById('resultContent');
     
     // Handle click on upload area to trigger file input
-    uploadArea.addEventListener('click', function() {
-        imageInput.click();
+    uploadArea.addEventListener('click', function(e) {
+        // Only trigger file input if we're not clicking on the file input itself
+        if (e.target !== imageInput && !e.target.closest('.file-status')) {
+            e.preventDefault();
+            imageInput.click();
+        }
     });
     
     // Handle file drag and drop
@@ -43,22 +47,33 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
+    // Prevent double clicks on file input
+    imageInput.addEventListener('click', function(e) {
+        e.stopPropagation();
+    });
+    
     // Update upload area with selected file
     function updateUploadArea(file) {
-        const fileInfo = document.createElement('div');
-        fileInfo.className = 'file-info';
-        fileInfo.innerHTML = `
+        // Find or create the file status element
+        let statusElement = uploadArea.querySelector('.file-status');
+        if (!statusElement) {
+            statusElement = document.createElement('div');
+            statusElement.className = 'file-status';
+            // Insert before the file input
+            uploadArea.insertBefore(statusElement, imageInput);
+        }
+        
+        statusElement.innerHTML = `
             <p>📎 Selected: ${file.name}</p>
             <p>Size: ${(file.size / 1024 / 1024).toFixed(2)} MB</p>
             <p style="color: #667eea; font-size: 0.9rem;">Click "Analyze Image" to process or click here to select a different file</p>
         `;
         
-        // Clear the upload area content but keep the file input
-        uploadArea.innerHTML = '';
-        uploadArea.appendChild(fileInfo);
-        uploadArea.appendChild(imageInput);
+        // Hide default text
+        const defaultTexts = uploadArea.querySelectorAll('p:not(.file-status p)');
+        defaultTexts.forEach(p => p.style.display = 'none');
         
-        // Update the styling to show file is selected
+        // Update styling
         uploadArea.style.backgroundColor = '#f8f9ff';
         uploadArea.style.borderColor = '#667eea';
     }

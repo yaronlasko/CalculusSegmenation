@@ -93,8 +93,9 @@ class CalculusDetector:
                 verbose=False  # Suppress YOLO output
             )
             
-            overlay = original_image.copy()
-            annotations = np.zeros_like(overlay)
+            # Create processed image (with overlays) - copy of original
+            # IMPORTANT: Do NOT modify the original image file
+            processed_image = original_image.copy()
             detection_results = []
             
             total_teeth = 0
@@ -176,11 +177,20 @@ class CalculusDetector:
                                             break
                                 attempts += 1
                     
-                    # Create red overlay for calculus
+                    # Create red overlay for calculus with better visibility
                     red_mask = np.zeros_like(tooth_crop)
-                    red_mask[:, :, 2] = pred_mask
-                    blended = cv2.addWeighted(tooth_crop, 1.0, red_mask, 0.5, 0)
-                    overlay[y1:y2, x1:x2] = blended
+                    red_mask[:, :, 2] = pred_mask  # Red channel
+                    
+                    # Make calculus areas more prominent
+                    blended = cv2.addWeighted(tooth_crop, 0.6, red_mask, 0.9, 0)
+                    
+                    # Also add some blue to make it more purple-red for better contrast
+                    purple_mask = np.zeros_like(tooth_crop)
+                    purple_mask[:, :, 0] = pred_mask // 2  # Blue channel (half intensity)
+                    purple_mask[:, :, 2] = pred_mask  # Red channel
+                    blended = cv2.addWeighted(blended, 0.7, purple_mask, 0.3, 0)
+                    
+                    processed_image[y1:y2, x1:x2] = blended
                     
                     # Calculate percentage coverage
                     # Get the tooth mask in the cropped region
@@ -196,19 +206,71 @@ class CalculusDetector:
                     
                     total_calculus_coverage += percent_covered
                     
-                    # Add percentage text
-                    cx = (x1 + x2) // 2
-                    cy = (y1 + y2) // 2
+                    # Calculate better text positioning based on tooth center of mass
+                    # Find the center of mass of the tooth within the crop region
+                    crop_tooth_mask_for_com = mask_np[y1:y2, x1:x2]
+                    if crop_tooth_mask_for_com.shape != (y2-y1, x2-x1):
+                        crop_tooth_mask_for_com = cv2.resize(crop_tooth_mask_for_com, (x2-x1, y2-y1), interpolation=cv2.INTER_NEAREST)
+                    
+                    # Find center of mass of the tooth
+                    tooth_pixels = np.where(crop_tooth_mask_for_com > 0)
+                    if len(tooth_pixels[0]) > 0:
+                        # Center of mass relative to the crop
+                        com_y = int(np.mean(tooth_pixels[0]))
+                        com_x = int(np.mean(tooth_pixels[1]))
+                        # Convert to global coordinates
+                        text_x = x1 + com_x
+                        text_y = y1 + com_y
+                    else:
+                        # Fallback to bounding box center
+                        text_x = (x1 + x2) // 2
+                        text_y = (y1 + y2) // 2
+                    
                     text = f"{percent_covered:.1f}%"
                     
+                    # Scale font size based on tooth size for better visibility
+                    tooth_width = x2 - x1
+                    tooth_height = y2 - y1
+                    base_font_scale = min(tooth_width, tooth_height) / 80.0  # Reduced divisor for larger text
+                    font_scale = max(1.0, min(3.0, base_font_scale))  # Increased minimum and maximum
+                    
+                    font = cv2.FONT_HERSHEY_SIMPLEX
+                    font_thickness = max(2, int(font_scale * 2))  # Scale thickness with font size
+                    (text_width, text_height), baseline = cv2.getTextSize(text, font, font_scale, font_thickness)
+                    
+                    # FIXED: Better bounds checking - ensure text stays within tooth area, not image bounds
+                    # Keep text within the tooth's bounding box
+                    text_x = max(x1 + text_width//2 + 10, min(x2 - text_width//2 - 10, text_x))
+                    text_y = max(y1 + text_height + 10, min(y2 - 10, text_y))
+                    
+                    # Draw black background rectangle with border for better visibility
+                    bg_padding = max(8, int(font_scale * 8))  # Increased padding
+                    cv2.rectangle(
+                        processed_image,
+                        (text_x - text_width//2 - bg_padding, text_y - text_height//2 - bg_padding),
+                        (text_x + text_width//2 + bg_padding, text_y + text_height//2 + bg_padding),
+                        (0, 0, 0),  # Black background
+                        -1
+                    )
+                    
+                    # Draw white border for better contrast
+                    cv2.rectangle(
+                        processed_image,
+                        (text_x - text_width//2 - bg_padding, text_y - text_height//2 - bg_padding),
+                        (text_x + text_width//2 + bg_padding, text_y + text_height//2 + bg_padding),
+                        (255, 255, 255),  # White border
+                        max(2, int(font_scale * 1.5))  # Thicker border
+                    )
+                    
+                    # Draw text in bright yellow for maximum visibility
                     cv2.putText(
-                        annotations,
+                        processed_image,
                         text,
-                        (cx - 20, cy),
-                        cv2.FONT_HERSHEY_SIMPLEX,
-                        0.5,
-                        (0, 0, 255),
-                        1,
+                        (text_x - text_width//2, text_y + text_height//2),
+                        font,
+                        font_scale,
+                        (0, 255, 255),  # Bright yellow
+                        font_thickness,
                         cv2.LINE_AA
                     )
                     
@@ -218,13 +280,11 @@ class CalculusDetector:
                         'bounding_box': [int(x1), int(y1), int(x2), int(y2)]
                     })
             
-            # Combine overlay and annotations
-            text_mask = np.any(annotations != 0, axis=-1)
-            overlay[text_mask] = annotations[text_mask]
-            
-            # Save processed image
-            output_path = image_path.replace('.jpg', '_processed.jpg').replace('.png', '_processed.png').replace('.jpeg', '_processed.jpeg')
-            cv2.imwrite(output_path, overlay)
+            # Save processed image with overlays
+            # Create a separate processed image path to avoid overwriting the original
+            base_path, ext = os.path.splitext(image_path)
+            output_path = f"{base_path}_processed{ext}"
+            cv2.imwrite(output_path, processed_image)
             
             # Calculate overall statistics
             avg_calculus_coverage = total_calculus_coverage / total_teeth if total_teeth > 0 else 0

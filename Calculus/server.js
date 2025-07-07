@@ -84,12 +84,37 @@ let annotations = {};
 
 // Initialize with actual images from uploads directory
 function initializeImages() {
+    // Custom sorting function to sort numerically when possible
+    function numericSort(a, b) {
+        // Extract the base filename without extension
+        const aName = a.replace(/\.[^/.]+$/, '');
+        const bName = b.replace(/\.[^/.]+$/, '');
+        
+        // Check if both are valid numbers
+        const aNum = parseFloat(aName);
+        const bNum = parseFloat(bName);
+        
+        if (!isNaN(aNum) && !isNaN(bNum)) {
+            // Both are numbers, sort numerically
+            return aNum - bNum;
+        } else if (!isNaN(aNum)) {
+            // Only a is a number, a comes first
+            return -1;
+        } else if (!isNaN(bNum)) {
+            // Only b is a number, b comes first
+            return 1;
+        } else {
+            // Neither are numbers, sort alphabetically
+            return a.localeCompare(b);
+        }
+    }
+    
     // Load test images
     const testImagesDir = path.join(__dirname, 'uploads', 'test-images');
     if (fs.existsSync(testImagesDir)) {
         const testImageFiles = fs.readdirSync(testImagesDir)
             .filter(file => /\.(jpg|jpeg|png|gif)$/i.test(file))
-            .sort();
+            .sort(numericSort);
         
         testImageFiles.forEach((file, index) => {
             testImages.push({
@@ -107,7 +132,7 @@ function initializeImages() {
     if (fs.existsSync(annotateImagesDir)) {
         const annotateImageFiles = fs.readdirSync(annotateImagesDir)
             .filter(file => /\.(jpg|jpeg|png|gif)$/i.test(file))
-            .sort();
+            .sort(numericSort);
         
         annotateImageFiles.forEach((file, index) => {
             annotateImages.push({
@@ -150,7 +175,8 @@ app.post('/detect', upload.single('image'), async (req, res) => {
         if (result.success) {
             // Return the detection results
             const processedImagePath = result.processed_image_path;
-            const processedImageUrl = processedImagePath.replace(path.join(__dirname, ''), '').replace(/\\/g, '/');
+            // Convert the processed image path to a URL
+            const processedImageUrl = processedImagePath.replace(/\\/g, '/');
             
             res.json({
                 success: true,
@@ -160,7 +186,7 @@ app.post('/detect', upload.single('image'), async (req, res) => {
                     teeth_detected: result.teeth_detected,
                     average_calculus_coverage: result.average_calculus_coverage,
                     individual_results: result.individual_results,
-                    processed_image_url: processedImageUrl,
+                    processed_image_url: `/${processedImageUrl}`,
                     original_image_url: `/uploads/images/${req.file.filename}`
                 }
             });
