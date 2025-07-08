@@ -25,7 +25,37 @@ const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'admin';
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
 
 // Configuration constants
-const MAX_USER_ID = parseInt(process.env.MAX_USER_ID) || 10;
+const MAX_USER_ID = parseInt(process.env.MAX_USER_ID) || 100;
+
+// Load user passwords from CSV file
+let USER_PASSWORDS = {};
+
+function loadUserPasswords() {
+    try {
+        const csvPath = path.join(__dirname, 'user_passwords.csv');
+        const csvData = fs.readFileSync(csvPath, 'utf8');
+        const lines = csvData.split('\n');
+        
+        // Skip header line
+        for (let i = 1; i < lines.length; i++) {
+            const line = lines[i].trim();
+            if (line) {
+                const [userId, password] = line.split(',');
+                if (userId && password) {
+                    USER_PASSWORDS[parseInt(userId)] = password;
+                }
+            }
+        }
+        
+        console.log(`Loaded ${Object.keys(USER_PASSWORDS).length} user passwords from CSV`);
+    } catch (error) {
+        console.error('Error loading user passwords:', error);
+        process.exit(1);
+    }
+}
+
+// Load passwords on startup
+loadUserPasswords();
 
 // Middleware
 app.use(helmet({
@@ -255,6 +285,8 @@ app.get('/test/user/:userId', (req, res) => {
         return res.redirect('/test?error=invalid_user_id');
     }
     
+    // Check if user is authenticated (optional - for extra security)
+    // For now, we'll allow direct access since password validation happens at login
     res.sendFile(path.join(__dirname, 'views', 'test-annotation.html'));
 });
 
@@ -262,6 +294,37 @@ app.get('/api/config', (req, res) => {
     res.json({
         maxUserId: MAX_USER_ID
     });
+});
+
+// Password validation endpoint
+app.post('/api/test/validate', (req, res) => {
+    const { userId, password } = req.body;
+    
+    // Validate user ID
+    if (!userId || isNaN(userId) || userId < 1 || userId > MAX_USER_ID) {
+        return res.status(400).json({ 
+            success: false, 
+            error: `User ID must be between 1 and ${MAX_USER_ID}` 
+        });
+    }
+    
+    // Validate password
+    if (!password || typeof password !== 'string' || password.length !== 4) {
+        return res.status(400).json({ 
+            success: false, 
+            error: 'Password must be a 4-digit string' 
+        });
+    }
+    
+    // Check if password matches
+    const expectedPassword = USER_PASSWORDS[userId];
+    if (password === expectedPassword) {
+        // Store user authentication in session
+        req.session.authenticatedUser = userId;
+        res.json({ success: true });
+    } else {
+        res.json({ success: false, error: 'Invalid credentials' });
+    }
 });
 
 app.get('/api/test/images/:userId', (req, res) => {
